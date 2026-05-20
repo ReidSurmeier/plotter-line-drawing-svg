@@ -21,6 +21,7 @@ paper = ["matplotlib>=3.8", "scikit-image>=0.22", "scipy>=1.11"]
 
 [project.scripts]
 plotter-line-svg = "plotter_line_drawing_svg.cli:main"
+plotter-line-svg-animate = "plotter_line_drawing_svg.svg_animation:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/plotter_line_drawing_svg"]
