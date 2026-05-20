@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from plotter_line_drawing_svg.paper_figures import polygon_area_from_path, target_coverage_load
+from plotter_line_drawing_svg.paper_figures import (
+    infer_plate_alpha,
+    polygon_area_from_path,
+    target_coverage_load,
+    uv_prime_sample,
+)
 
 
 def test_polygon_area_from_path():
@@ -13,3 +18,16 @@ def test_target_coverage_load_uses_fixed_opacity_target():
     alpha = np.asarray([[[0.0, 0.55], [1.0, 0.275]]], dtype=np.float32)
     load = target_coverage_load(alpha, mark_opacity=0.55)
     assert np.allclose(load, np.asarray([[0.0, 0.96, 0.96, 0.5]]).mean(axis=1))
+
+
+def test_infer_plate_alpha_from_white_paper_overprint():
+    rgb = np.asarray([[[1.0, 1.0, 1.0], [0.5, 0.5, 0.5], [0.0, 0.0, 0.0]]], dtype=np.float32)
+    alpha = infer_plate_alpha(rgb, ink_rgb=(0, 0, 0), paper_rgb=(255, 255, 255))
+    assert np.allclose(alpha, [[0.0, 0.5, 1.0]])
+
+
+def test_uv_prime_sample_shape():
+    rgb = np.ones((2, 2, 3), dtype=np.float32)
+    uv = uv_prime_sample(rgb)
+    assert uv.shape == (4, 2)
+    assert np.all(np.isfinite(uv))

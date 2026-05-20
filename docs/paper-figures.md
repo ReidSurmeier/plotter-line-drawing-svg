@@ -11,12 +11,19 @@ Outputs:
 - `F4_deltaE_heatmap.pdf`
 - `F5_ink_load_vs_budget.pdf`
 - `F6_hue_rotation_error.pdf`
+- `F7_lab_3d_color_solid.pdf`
+- `F8_cie1976_uv_chromaticity.pdf`
+- `F9_dot_gain_coverage_curve.pdf`
+- `F10_hue_angle_error_rose.pdf`
 
 The figures use:
 
 - CIEDE2000 color difference in Lab space.
 - Lab `a*b*` convex hulls for gamut comparison.
+- CIELAB 3D hulls for color solid comparison.
+- CIE 1976 `u'v'` chromaticity hulls.
 - Per-ink mark-area load from the emitted SVG paths.
+- Rasterized per-plate SVGs for measured coverage in the dot-gain plot.
 - A critical default budget of `6.25%`.
 
 Example:

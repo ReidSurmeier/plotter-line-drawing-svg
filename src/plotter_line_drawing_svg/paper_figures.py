@@ -4,6 +4,9 @@ import argparse
 import json
 import math
 import re
+import shutil
+import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -17,6 +20,18 @@ from plotter_line_drawing_svg.markmaking import InkSet, load_alpha_stack, load_i
 
 METHOD_COLORS = {"regen": "#1870b8", "prune": "#c94232"}
 RUNG_ORDER = ["full", "25%", "6.25%", "1.5625%"]
+FIGURE_NAMES = [
+    "deltaE_vs_budget",
+    "per_ink_coverage_error",
+    "gamut_shrink",
+    "deltaE_heatmap",
+    "ink_load_vs_budget",
+    "hue_rotation_error",
+    "lab_3d_color_solid",
+    "cie1976_uv_chromaticity",
+    "dot_gain_coverage_curve",
+    "hue_angle_error_rose",
+]
 
 
 @dataclass(frozen=True)
@@ -70,6 +85,25 @@ def main() -> int:
         critical_scale=args.critical_scale,
         max_side=args.max_side,
     )
+    figure_lab_3d_color_solid(
+        records,
+        args.out / "F7_lab_3d_color_solid.pdf",
+        critical_scale=args.critical_scale,
+        max_side=args.max_side,
+    )
+    figure_cie1976_uv_chromaticity(
+        records,
+        args.out / "F8_cie1976_uv_chromaticity.pdf",
+        critical_scale=args.critical_scale,
+        max_side=args.max_side,
+    )
+    figure_dot_gain_coverage_curve(records, inkset, args.out / "F9_dot_gain_coverage_curve.pdf")
+    figure_hue_angle_error_rose(
+        records,
+        args.out / "F10_hue_angle_error_rose.pdf",
+        critical_scale=args.critical_scale,
+        max_side=args.max_side,
+    )
 
     summary = {
         "records": [
@@ -82,17 +116,7 @@ def main() -> int:
             }
             for record in records
         ],
-        "figures": [f"F{i}_{name}.pdf" for i, name in enumerate(
-            [
-                "deltaE_vs_budget",
-                "per_ink_coverage_error",
-                "gamut_shrink",
-                "deltaE_heatmap",
-                "ink_load_vs_budget",
-                "hue_rotation_error",
-            ],
-            start=1,
-        )],
+        "figures": [f"F{i}_{name}.pdf" for i, name in enumerate(FIGURE_NAMES, start=1)],
     }
     (args.out / "paper_figure_manifest.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(json.dumps(summary, indent=2))
@@ -306,6 +330,138 @@ def figure_hue_rotation_error(
     plt.close(fig)
 
 
+def figure_lab_3d_color_solid(
+    records: list[ProofRecord],
+    out: Path,
+    *,
+    critical_scale: float,
+    max_side: int,
+) -> None:
+    plt = _plt()
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+    regen = closest_scale_record(records, "regen", critical_scale)
+    prune = closest_scale_record(records, "prune", critical_scale)
+    target_lab = lab_sample(load_rgb01(regen.target_path, max_side=max_side), max_samples=3500)
+    regen_lab = lab_sample(load_rgb01(regen.rendered_path, max_side=max_side), max_samples=3500)
+    prune_lab = lab_sample(load_rgb01(prune.rendered_path, max_side=max_side), max_samples=3500)
+
+    fig = plt.figure(figsize=(8.5, 6.4))
+    ax = fig.add_subplot(111, projection="3d")
+    for label, lab, color, alpha in (
+        ("target", target_lab, "#111111", 0.10),
+        ("regen", regen_lab, METHOD_COLORS["regen"], 0.22),
+        ("prune", prune_lab, METHOD_COLORS["prune"], 0.20),
+    ):
+        faces = convex_hull_faces_3d(lab)
+        if faces:
+            collection = Poly3DCollection(faces, facecolor=color, edgecolor=color, linewidth=0.22, alpha=alpha)
+            ax.add_collection3d(collection)
+        ax.scatter(lab[:: max(1, len(lab) // 850), 1], lab[:: max(1, len(lab) // 850), 2], lab[:: max(1, len(lab) // 850), 0], s=1.2, color=color, alpha=0.18, label=label)
+    all_lab = np.vstack([target_lab, regen_lab, prune_lab])
+    ax.set_xlim(float(np.min(all_lab[:, 1])), float(np.max(all_lab[:, 1])))
+    ax.set_ylim(float(np.min(all_lab[:, 2])), float(np.max(all_lab[:, 2])))
+    ax.set_zlim(float(np.min(all_lab[:, 0])), float(np.max(all_lab[:, 0])))
+    ax.set_xlabel("Lab a*")
+    ax.set_ylabel("Lab b*")
+    ax.set_zlabel("Lab L*")
+    ax.set_title(f"CIELAB color solid at {regen.rung}")
+    ax.view_init(elev=22, azim=-52)
+    ax.legend(frameon=False, loc="upper left")
+    fig.tight_layout()
+    fig.savefig(out)
+    plt.close(fig)
+
+
+def figure_cie1976_uv_chromaticity(
+    records: list[ProofRecord],
+    out: Path,
+    *,
+    critical_scale: float,
+    max_side: int,
+) -> None:
+    plt = _plt()
+    regen = closest_scale_record(records, "regen", critical_scale)
+    prune = closest_scale_record(records, "prune", critical_scale)
+    target_uv = uv_prime_sample(load_rgb01(regen.target_path, max_side=max_side))
+    regen_uv = uv_prime_sample(load_rgb01(regen.rendered_path, max_side=max_side))
+    prune_uv = uv_prime_sample(load_rgb01(prune.rendered_path, max_side=max_side))
+
+    fig, ax = plt.subplots(figsize=(6.2, 5.2))
+    _plot_hull(ax, target_uv, color="#111111", lw=1.8, alpha=0.75, label="target")
+    _plot_hull(ax, regen_uv, color=METHOD_COLORS["regen"], lw=2.1, alpha=0.88, label=f"regen {regen.rung}")
+    _plot_hull(ax, prune_uv, color=METHOD_COLORS["prune"], lw=2.1, alpha=0.88, label=f"prune {prune.rung}")
+    ax.scatter(target_uv[:: max(1, len(target_uv) // 1200), 0], target_uv[:: max(1, len(target_uv) // 1200), 1], s=1, color="#111111", alpha=0.05)
+    ax.set_xlabel("CIE 1976 u'")
+    ax.set_ylabel("CIE 1976 v'")
+    ax.set_title("CIE 1976 u'v' chromaticity hull")
+    ax.legend(frameon=False)
+    ax.grid(True, alpha=0.22)
+    fig.tight_layout()
+    fig.savefig(out)
+    plt.close(fig)
+
+
+def figure_dot_gain_coverage_curve(records: list[ProofRecord], inkset: InkSet, out: Path) -> None:
+    plt = _plt()
+    fig, axes = plt.subplots(1, 2, figsize=(10.2, 4.8), sharex=True, sharey=True)
+    for ax, method in zip(axes, ("regen", "prune"), strict=True):
+        method_records = sorted(_method_records(records, method), key=lambda record: record.budget_scale)
+        nominal_by_record = [path_area_load(record) for record in method_records]
+        measured_by_record = [measured_plate_coverage_load(record, inkset) for record in method_records]
+        for ink_index, ink in enumerate(inkset.inks):
+            x = np.asarray([load[ink_index] for load in nominal_by_record], dtype=np.float64)
+            y = np.asarray([load[ink_index] for load in measured_by_record], dtype=np.float64)
+            ax.plot(x, y, color=_rgb01_tuple(ink.rgb), lw=1.1, alpha=0.78)
+            ax.scatter(x, y, color=_rgb01_tuple(ink.rgb), edgecolor="#111111", linewidth=0.25, s=22, alpha=0.92)
+        max_axis = max(0.01, *(float(np.max(load)) for load in nominal_by_record + measured_by_record))
+        ax.plot([0, max_axis], [0, max_axis], color="#111111", lw=0.9, alpha=0.42, linestyle="--")
+        ax.set_title(method)
+        ax.set_xlabel("nominal lozenge coverage")
+        ax.grid(True, alpha=0.22)
+    axes[0].set_ylabel("measured rendered coverage")
+    fig.suptitle("Dot gain / coverage curve by ink", y=0.99)
+    fig.tight_layout()
+    fig.savefig(out)
+    plt.close(fig)
+
+
+def figure_hue_angle_error_rose(
+    records: list[ProofRecord],
+    out: Path,
+    *,
+    critical_scale: float,
+    max_side: int,
+) -> None:
+    plt = _plt()
+    from skimage.color import rgb2lab
+
+    fig, axes = plt.subplots(1, 2, figsize=(9, 4.4), subplot_kw={"projection": "polar"})
+    bins = np.linspace(-np.pi, np.pi, 49)
+    width = bins[1] - bins[0]
+    for ax, method in zip(axes, ("regen", "prune"), strict=True):
+        record = closest_scale_record(records, method, critical_scale)
+        target = load_rgb01(record.target_path, max_side=max_side)
+        rendered = load_rgb01(record.rendered_path, max_side=max_side)
+        target_lab = rgb2lab(target)
+        rendered_lab = rgb2lab(rendered)
+        target_angle = np.arctan2(target_lab[..., 2], target_lab[..., 1])
+        rendered_angle = np.arctan2(rendered_lab[..., 2], rendered_lab[..., 1])
+        target_chroma = np.hypot(target_lab[..., 1], target_lab[..., 2])
+        delta = delta_e(target, rendered)
+        rotation = ((target_angle - rendered_angle + np.pi) % (2.0 * np.pi)) - np.pi
+        rotation = rotation[(delta > 5.0) & (target_chroma > 5.0)]
+        hist, edges = np.histogram(rotation, bins=bins)
+        ax.bar(edges[:-1], hist, width=width, align="edge", color=METHOD_COLORS[method], alpha=0.72)
+        ax.set_title(f"{method} {record.rung}")
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(-1)
+    fig.suptitle("Lab hue-angle error rose")
+    fig.tight_layout()
+    fig.savefig(out)
+    plt.close(fig)
+
+
 def delta_e_for_record(record: ProofRecord, *, max_side: int) -> NDArray[np.float32]:
     return delta_e(load_rgb01(record.target_path, max_side=max_side), load_rgb01(record.rendered_path, max_side=max_side))
 
@@ -328,6 +484,47 @@ def lab_ab_sample(rgb: NDArray[np.float32], *, max_samples: int = 9000) -> NDArr
         step = int(math.ceil(lab.shape[0] / max_samples))
         lab = lab[::step]
     return lab[:, 1:3].astype(np.float32)
+
+
+def lab_sample(rgb: NDArray[np.float32], *, max_samples: int = 9000) -> NDArray[np.float32]:
+    from skimage.color import rgb2lab
+
+    lab = rgb2lab(rgb).reshape(-1, 3)
+    if lab.shape[0] > max_samples:
+        step = int(math.ceil(lab.shape[0] / max_samples))
+        lab = lab[::step]
+    return lab.astype(np.float32)
+
+
+def uv_prime_sample(rgb: NDArray[np.float32], *, max_samples: int = 9000) -> NDArray[np.float32]:
+    from skimage.color import rgb2xyz
+
+    xyz = rgb2xyz(rgb).reshape(-1, 3)
+    if xyz.shape[0] > max_samples:
+        step = int(math.ceil(xyz.shape[0] / max_samples))
+        xyz = xyz[::step]
+    x = xyz[:, 0]
+    y = xyz[:, 1]
+    z = xyz[:, 2]
+    denom = x + 15.0 * y + 3.0 * z
+    valid = denom > 1e-8
+    u = np.zeros_like(x)
+    v = np.zeros_like(y)
+    u[valid] = 4.0 * x[valid] / denom[valid]
+    v[valid] = 9.0 * y[valid] / denom[valid]
+    return np.column_stack([u, v]).astype(np.float32)
+
+
+def convex_hull_faces_3d(points: NDArray[np.float32]) -> list[NDArray[np.float32]]:
+    from scipy.spatial import ConvexHull, QhullError
+
+    if points.shape[0] < 4:
+        return []
+    try:
+        hull = ConvexHull(points)
+    except QhullError:
+        return []
+    return [points[simplex] for simplex in hull.simplices]
 
 
 def target_coverage_load(alpha_stack: NDArray[np.float32], *, mark_opacity: float) -> NDArray[np.float64]:
@@ -362,6 +559,66 @@ def polygon_area_from_path(d: str) -> float:
     for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1], strict=True):
         area += x0 * y1 - x1 * y0
     return abs(area) * 0.5
+
+
+def measured_plate_coverage_load(record: ProofRecord, inkset: InkSet) -> NDArray[np.float64]:
+    rsvg = shutil.which("rsvg-convert")
+    if rsvg is None:
+        return path_area_load(record)
+    plate_dir = record.proof_dir / "plate_svgs"
+    plate_paths = sorted(plate_dir.glob("*.svg"))
+    if not plate_paths:
+        return path_area_load(record)
+    loads = np.zeros(len(inkset.inks), dtype=np.float64)
+    with tempfile.TemporaryDirectory(prefix="plotter-line-plate-raster-") as tmp_name:
+        tmp = Path(tmp_name)
+        for index, ink in enumerate(inkset.inks):
+            if index >= len(plate_paths):
+                continue
+            svg_path = plate_paths[index]
+            png_path = tmp / f"plate_{index:02d}.png"
+            subprocess.run([rsvg, "-w", "900", str(svg_path), "-o", str(png_path)], check=True, stdout=subprocess.DEVNULL)
+            rgb = crop_artwork_from_rendered_svg(png_path, svg_path)
+            loads[index] = infer_plate_alpha(rgb, ink.rgb, inkset.paper_rgb).mean()
+    return loads
+
+
+def crop_artwork_from_rendered_svg(png_path: Path, svg_path: Path) -> NDArray[np.float32]:
+    svg = svg_path.read_text(encoding="utf-8")
+    view_match = re.search(r'viewBox="0 0 ([0-9.]+) ([0-9.]+)"', svg)
+    rect_match = re.search(
+        r'id="artwork_bounds" x="([0-9.]+)" y="([0-9.]+)" width="([0-9.]+)" height="([0-9.]+)"',
+        svg,
+    )
+    image = Image.open(png_path).convert("RGB")
+    if not (view_match and rect_match):
+        return np.asarray(image, dtype=np.float32) / 255.0
+    page_w = float(view_match.group(1))
+    page_h = float(view_match.group(2))
+    rect_x, rect_y, rect_w, rect_h = [float(rect_match.group(i)) for i in range(1, 5)]
+    px_w, px_h = image.size
+    crop_box = (
+        int(round(rect_x / page_w * px_w)),
+        int(round(rect_y / page_h * px_h)),
+        int(round((rect_x + rect_w) / page_w * px_w)),
+        int(round((rect_y + rect_h) / page_h * px_h)),
+    )
+    return np.asarray(image.crop(crop_box), dtype=np.float32) / 255.0
+
+
+def infer_plate_alpha(
+    rgb: NDArray[np.float32],
+    ink_rgb: tuple[int, int, int],
+    paper_rgb: tuple[int, int, int],
+) -> NDArray[np.float32]:
+    paper = np.asarray(paper_rgb, dtype=np.float32) / 255.0
+    ink = np.asarray(ink_rgb, dtype=np.float32) / 255.0
+    direction = paper - ink
+    denom = float(np.dot(direction, direction))
+    if denom <= 1e-8:
+        return np.zeros(rgb.shape[:2], dtype=np.float32)
+    alpha = np.tensordot(paper - rgb, direction, axes=([-1], [0])) / denom
+    return np.clip(alpha, 0.0, 1.0).astype(np.float32)
 
 
 def closest_scale_record(records: list[ProofRecord], method: str, target_scale: float) -> ProofRecord:
