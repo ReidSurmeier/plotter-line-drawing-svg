@@ -176,7 +176,11 @@ def compose_frame_svg(
 ) -> str:
     preamble = crop_preamble_to_artwork(parsed.preamble, parsed.artwork_rect)
     parts = [preamble]
-    for layer in ordered_layers:
+    # Reveal timing is controlled by ordered_layers, but compositing must remain
+    # in the original SVG order. SVG alpha blending is order-dependent, so
+    # reordering groups changes the solved output color.
+    _ = ordered_layers
+    for layer in parsed.layers:
         progress = float(layer_progress.get(layer.index, 0.0))
         if progress <= 0.0:
             continue
