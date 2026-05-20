@@ -353,15 +353,32 @@ def figure_lab_3d_color_solid(
         ("regen", regen_lab, METHOD_COLORS["regen"], 0.22),
         ("prune", prune_lab, METHOD_COLORS["prune"], 0.20),
     ):
-        faces = convex_hull_faces_3d(lab)
+        plot_points = lab_plot_points(lab)
+        faces = convex_hull_faces_3d(plot_points)
         if faces:
             collection = Poly3DCollection(faces, facecolor=color, edgecolor=color, linewidth=0.22, alpha=alpha)
             ax.add_collection3d(collection)
-        ax.scatter(lab[:: max(1, len(lab) // 850), 1], lab[:: max(1, len(lab) // 850), 2], lab[:: max(1, len(lab) // 850), 0], s=1.2, color=color, alpha=0.18, label=label)
-    all_lab = np.vstack([target_lab, regen_lab, prune_lab])
-    ax.set_xlim(float(np.min(all_lab[:, 1])), float(np.max(all_lab[:, 1])))
-    ax.set_ylim(float(np.min(all_lab[:, 2])), float(np.max(all_lab[:, 2])))
-    ax.set_zlim(float(np.min(all_lab[:, 0])), float(np.max(all_lab[:, 0])))
+        stride = max(1, len(plot_points) // 850)
+        ax.scatter(
+            plot_points[::stride, 0],
+            plot_points[::stride, 1],
+            plot_points[::stride, 2],
+            s=1.2,
+            color=color,
+            alpha=0.18,
+            label=label,
+        )
+    all_points = lab_plot_points(np.vstack([target_lab, regen_lab, prune_lab]))
+    ax.set_xlim(*axis_limits(all_points[:, 0]))
+    ax.set_ylim(*axis_limits(all_points[:, 1]))
+    ax.set_zlim(*axis_limits(all_points[:, 2]))
+    ax.set_box_aspect(
+        (
+            float(np.ptp(all_points[:, 0])),
+            float(np.ptp(all_points[:, 1])),
+            float(np.ptp(all_points[:, 2])),
+        )
+    )
     ax.set_xlabel("Lab a*")
     ax.set_ylabel("Lab b*")
     ax.set_zlabel("Lab L*")
@@ -494,6 +511,18 @@ def lab_sample(rgb: NDArray[np.float32], *, max_samples: int = 9000) -> NDArray[
         step = int(math.ceil(lab.shape[0] / max_samples))
         lab = lab[::step]
     return lab.astype(np.float32)
+
+
+def lab_plot_points(lab: NDArray[np.float32]) -> NDArray[np.float32]:
+    """Return Lab samples in plotting order: x=a*, y=b*, z=L*."""
+    return lab[:, [1, 2, 0]].astype(np.float32)
+
+
+def axis_limits(values: NDArray[np.float32], *, pad_fraction: float = 0.08) -> tuple[float, float]:
+    low = float(np.min(values))
+    high = float(np.max(values))
+    pad = max((high - low) * pad_fraction, 1.0)
+    return low - pad, high + pad
 
 
 def uv_prime_sample(rgb: NDArray[np.float32], *, max_samples: int = 9000) -> NDArray[np.float32]:

@@ -4,6 +4,7 @@ import numpy as np
 
 from plotter_line_drawing_svg.paper_figures import (
     infer_plate_alpha,
+    lab_plot_points,
     polygon_area_from_path,
     target_coverage_load,
     uv_prime_sample,
@@ -31,3 +32,9 @@ def test_uv_prime_sample_shape():
     uv = uv_prime_sample(rgb)
     assert uv.shape == (4, 2)
     assert np.all(np.isfinite(uv))
+
+
+def test_lab_plot_points_reorders_lab_for_3d_axes():
+    lab = np.asarray([[50.0, -10.0, 20.0]], dtype=np.float32)
+    plotted = lab_plot_points(lab)
+    assert np.allclose(plotted, [[-10.0, 20.0, 50.0]])
