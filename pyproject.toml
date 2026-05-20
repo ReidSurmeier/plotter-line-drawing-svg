@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "plotter-line-drawing-svg"
+version = "0.1.0"
+description = "Convert solved plotter color plates into line-drawing SVG mark fields."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Reid Surmeier" }]
+dependencies = [
+    "numpy>=1.26",
+    "Pillow>=10",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+plotter-line-svg = "plotter_line_drawing_svg.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/plotter_line_drawing_svg"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
