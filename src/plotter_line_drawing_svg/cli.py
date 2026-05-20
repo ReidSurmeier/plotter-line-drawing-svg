@@ -15,6 +15,7 @@ from plotter_line_drawing_svg.markmaking import (
     load_alpha_stack,
     load_inkset,
     rasterize_svg_artwork,
+    retain_paths_per_plate,
     write_contact_sheet,
     write_plate_svgs,
 )
@@ -34,6 +35,12 @@ def main() -> int:
         type=float,
         default=0.0,
         help="Regenerate a lower-count mark field at this fraction of baseline path counts.",
+    )
+    parser.add_argument(
+        "--path-retention",
+        type=float,
+        default=1.0,
+        help="Naively prune this fraction of ranked baseline paths per plate.",
     )
     args = parser.parse_args()
 
@@ -60,6 +67,8 @@ def main() -> int:
             config=config,
             scale=args.budget_solve_scale,
         )
+    elif args.path_retention < 0.999999:
+        paths, path_metrics = retain_paths_per_plate(baseline_paths, args.path_retention)
     else:
         paths, path_metrics = baseline_paths, baseline_metrics
 
@@ -98,6 +107,7 @@ def main() -> int:
             "min_alpha": args.min_alpha,
             "max_paths_per_plate": args.max_paths_per_plate,
             "budget_solve_scale": args.budget_solve_scale,
+            "path_retention": args.path_retention,
         },
         "paths": path_metrics,
         "artifacts": artifacts,

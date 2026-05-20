@@ -7,6 +7,7 @@ from plotter_line_drawing_svg.markmaking import (
     MarkPath,
     alpha_masks_to_budget_solved_paths,
     alpha_masks_to_coverage_paths,
+    retain_paths_per_plate,
     write_plate_svgs,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "MarkPath",
     "alpha_masks_to_budget_solved_paths",
     "alpha_masks_to_coverage_paths",
+    "retain_paths_per_plate",
     "write_plate_svgs",
 ]

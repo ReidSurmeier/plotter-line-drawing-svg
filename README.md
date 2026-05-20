@@ -41,6 +41,23 @@ plotter-line-svg /path/to/jax-alpha-folder outputs/reduce75_step2 \
   --budget-solve-scale 0.0625
 ```
 
+Naive prune baseline:
+
+```bash
+plotter-line-svg /path/to/jax-alpha-folder outputs/prune_step2 \
+  --path-retention 0.0625
+```
+
+Paper figures:
+
+```bash
+python -m plotter_line_drawing_svg.paper_figures \
+  --jax-dir /path/to/jax-alpha-folder \
+  --regen-root /path/to/regen-proof-root \
+  --prune-root /path/to/prune-proof-root \
+  --out outputs/paper-figures
+```
+
 ## Input Contract
 
 The input folder must contain:

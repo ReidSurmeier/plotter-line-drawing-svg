@@ -140,6 +140,33 @@ def alpha_masks_to_coverage_paths(
     return paths, {"mode": "coverage_svg", "tile_px": tile, "paths_per_plate": paths_per_plate}
 
 
+def retain_paths_per_plate(paths: list[MarkPath], retention: float) -> tuple[list[MarkPath], dict[str, Any]]:
+    retention = float(np.clip(retention, 0.0, 1.0))
+    by_plate: dict[int, list[MarkPath]] = {}
+    for path in paths:
+        by_plate.setdefault(int(path.plate_index), []).append(path)
+
+    retained: list[MarkPath] = []
+    before: list[int] = []
+    after: list[int] = []
+    for plate in sorted(by_plate):
+        plate_paths = by_plate[plate]
+        keep_count = int(math.ceil(len(plate_paths) * retention))
+        if plate_paths and retention > 0.0:
+            keep_count = max(1, keep_count)
+        kept = plate_paths[:keep_count]
+        before.append(len(plate_paths))
+        after.append(len(kept))
+        retained.extend(kept)
+    return retained, {
+        "mode": "ranked_prune",
+        "path_retention": retention,
+        "paths_per_plate_before_retention": before,
+        "paths_per_plate_after_retention": after,
+        "paths_per_plate": after,
+    }
+
+
 def alpha_masks_to_budget_solved_paths(
     alpha_stack: NDArray[np.float32],
     *,

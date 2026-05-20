@@ -11,6 +11,7 @@ from plotter_line_drawing_svg.markmaking import (
     coverage_svg_document,
     load_alpha_stack,
     load_inkset,
+    retain_paths_per_plate,
 )
 
 
@@ -58,6 +59,19 @@ def test_budget_solve_hits_lower_path_budget():
     assert budget_paths
     assert budget_metrics["mode"] == "alpha_budget_solve"
     assert sum(budget_metrics["paths_per_plate"]) < sum(baseline_metrics["paths_per_plate"])
+
+
+def test_retain_paths_prunes_each_plate():
+    alpha = np.ones((2, 24, 24), dtype=np.float32) * 0.8
+    config = CoverageConfig(tile_px=4, max_paths_per_plate=200, mark_opacity=0.55)
+    paths, metrics = alpha_masks_to_coverage_paths(alpha, config=config)
+
+    retained, retained_metrics = retain_paths_per_plate(paths, 0.25)
+
+    assert retained
+    assert retained_metrics["mode"] == "ranked_prune"
+    assert retained_metrics["paths_per_plate"][0] < metrics["paths_per_plate"][0]
+    assert retained_metrics["paths_per_plate"][1] < metrics["paths_per_plate"][1]
 
 
 def test_svg_document_keeps_plate_layers():

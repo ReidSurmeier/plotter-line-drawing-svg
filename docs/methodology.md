@@ -38,3 +38,10 @@ full
 
 This is useful for testing plotter time and mark density without changing the
 upstream alpha plates.
+
+## Prune Baseline
+
+The prune baseline keeps the strongest ranked marks from the full mark field
+and deletes the rest. It is intentionally naive. It is useful as a comparison
+case because it shows what happens when fewer marks are available but the mark
+field is not regenerated to carry the image.
