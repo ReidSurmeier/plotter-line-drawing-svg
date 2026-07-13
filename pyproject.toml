@@ -15,6 +15,12 @@ dependencies = [
     "Pillow>=10",
 ]
 
+[project.urls]
+Homepage = "https://github.com/ReidSurmeier/plotter-line-drawing-svg"
+Documentation = "https://github.com/ReidSurmeier/plotter-line-drawing-svg/blob/main/docs/animation-workflow.md"
+Issues = "https://github.com/ReidSurmeier/plotter-line-drawing-svg/issues"
+Source = "https://github.com/ReidSurmeier/plotter-line-drawing-svg"
+
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.5"]
 paper = ["matplotlib>=3.8", "scikit-image>=0.22", "scipy>=1.11"]

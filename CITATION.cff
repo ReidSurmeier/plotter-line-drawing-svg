@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software or its markmaking method, please cite it with the metadata below."
+title: "Plotter Line Drawing SVG"
+type: software
+authors:
+  - family-names: "Surmeier"
+    given-names: "Reid"
+repository-code: "https://github.com/ReidSurmeier/plotter-line-drawing-svg"
+url: "https://github.com/ReidSurmeier/plotter-line-drawing-svg"
+version: 0.1.0
+license: MIT
+keywords:
+  - pen plotter
+  - SVG
+  - markmaking
+  - color separation
+  - animation

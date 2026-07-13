@@ -2,77 +2,101 @@ This is the final(version)
 
 # Plotter Line Drawing SVG
 
-Focused tooling for turning solved plotter color plates into layered SVG mark fields.
+Turn solved color-separation plates into layered SVG fields of filled plotter
+marks, then reveal those marks as an artwork-only MP4.
 
-This repo is for the markmaking stage only:
+The repository owns the last two stages of this pipeline:
 
 ```text
-alpha plates -> fixed-opacity coverage marks -> layered SVG plates
+source image
+    -> solved alpha plates                 upstream plate solver
+    -> fixed-opacity filled coverage marks this repository
+    -> layered SVG                         this repository
+    -> light-to-dark mark-build MP4        this repository
 ```
 
-It does not solve pigments, train DiffVG, or run the full Plotter Separation stack.
+> [!IMPORTANT]
+> This is not a one-command image-to-video model. The SVG tools require solved
+> alpha plates. If you are starting with a JPG or PNG, follow the
+> [complete animation workflow](docs/animation-workflow.md), which includes the
+> optional JAX plate-solving stage.
 
-Extracted from `ReidSurmeier/plotter-separation-rebuild` so this markmaking
-method can move independently from the older build.
+## What the marks are
 
-## What It Does
+Each alpha plate is interpreted as a local coverage target. The renderer emits
+short, filled line or lozenge paths with fixed opacity. Darkness comes from mark
+density, mark size, and overprinting—not translucent scribble strokes.
 
-- Reads `alpha_stack_float32.npz` and `metadata.json`.
-- Converts each alpha plate into filled line/lozenge marks.
-- Exports one master layered SVG and one SVG per plate.
-- Supports constrained stroke-budget solves instead of deleting marks.
+The result includes:
 
-## Usage
+- one master layered SVG;
+- one SVG for each ink plate;
+- raster previews and a contact sheet;
+- a direct MP4 reveal with no dashboard, labels, metrics, or data visualization.
+
+See [Methodology](docs/methodology.md) for the mark-generation model and
+[Provenance](docs/provenance.md) for the relationship to Plotter Separation.
+
+## Quick start from solved plates
+
+Python 3.11 or newer, `rsvg-convert`, and `ffmpeg` are required. On Ubuntu or
+WSL2:
 
 ```bash
-plotter-line-svg /path/to/jax-alpha-folder outputs/proof \
+sudo apt update
+sudo apt install -y git python3 python3-venv ffmpeg librsvg2-bin
+
+git clone https://github.com/ReidSurmeier/plotter-line-drawing-svg.git
+cd plotter-line-drawing-svg
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+Convert an existing alpha stack to SVG:
+
+```bash
+plotter-line-svg /path/to/jax-alpha-folder outputs/example/coverage-svg \
   --tile-px auto \
   --mark-opacity 0.55 \
+  --max-bands-per-cell 3 \
+  --min-alpha 0.025 \
   --max-paths-per-plate 7200
 ```
 
-Budget solve examples:
+Animate the master SVG:
 
 ```bash
-# 75% reduction from the baseline stroke budget
-plotter-line-svg /path/to/jax-alpha-folder outputs/reduce75_step1 \
-  --budget-solve-scale 0.25
-
-# Another 75% reduction
-plotter-line-svg /path/to/jax-alpha-folder outputs/reduce75_step2 \
-  --budget-solve-scale 0.0625
+plotter-line-svg-animate \
+  outputs/example/coverage-svg/master_coverage_svg.svg \
+  outputs/example/animation \
+  --output-name mark_build.mp4
 ```
 
-Naive prune baseline:
+The input folder must contain `alpha_stack_float32.npz` and `metadata.json`.
+See the [complete animation workflow](docs/animation-workflow.md) for every
+dependency, raw-image plate solving, GPU checks, output files, parameter tuning,
+and troubleshooting.
+
+## Documentation
+
+- [Complete animation workflow](docs/animation-workflow.md)
+- [Methodology](docs/methodology.md)
+- [Paper figures](docs/paper-figures.md)
+- [Provenance and scope](docs/provenance.md)
+- [Contributing](CONTRIBUTING.md)
+- [Support](SUPPORT.md)
+- [Security policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+
+## Development
 
 ```bash
-plotter-line-svg /path/to/jax-alpha-folder outputs/prune_step2 \
-  --path-retention 0.0625
+source .venv/bin/activate
+python -m pip install -e ".[dev,paper]"
+python -m pytest -q
+ruff check .
 ```
 
-Paper figures:
-
-```bash
-python -m plotter_line_drawing_svg.paper_figures \
-  --jax-dir /path/to/jax-alpha-folder \
-  --regen-root /path/to/regen-proof-root \
-  --prune-root /path/to/prune-proof-root \
-  --out outputs/paper-figures
-```
-
-## Input Contract
-
-The input folder must contain:
-
-- `alpha_stack_float32.npz` with `alpha_stack` shaped `(plates, height, width)`.
-- `metadata.json` with `inkset.inks`, where each ink has `id`, `label`, and `rgb`.
-
-Optional files:
-
-- `target_upscaled.png`
-- `composite_from_alpha_plates.png`
-
-## Notes
-
-The alpha value is treated as a coverage target, not printable opacity.
-Darkness comes from mark density, mark size, and layer overlap.
+The project is licensed under the [MIT License](LICENSE).

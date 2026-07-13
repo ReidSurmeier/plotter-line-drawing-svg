@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose a focused improvement to coverage-mark SVGs, budget solves, figures, or mark builds.
+title: "[Feature]: "
+labels: ["needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user-facing limitation are you trying to solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the public interface and expected output.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Repository area
+      options:
+        - Coverage-mark SVG generation
+        - Budget solve or prune baseline
+        - Mark-build animation
+        - Paper figures
+        - Documentation or tooling
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include any workaround and why it is insufficient.

@@ -9,4 +9,5 @@ build/
 
 # Generated proofs can be large.
 outputs/
+runs/
 *.svgz

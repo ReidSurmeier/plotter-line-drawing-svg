@@ -1,0 +1,50 @@
+name: Bug report
+description: Report reproducible incorrect behavior in plate loading, SVG generation, or animation.
+title: "[Bug]: "
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Remove private images, credentials, and private URLs before submitting.
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Describe the result and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and complete error
+      description: Paste the exact command and terminal output.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python version, package commit, and rsvg-convert and FFmpeg versions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: input
+    attributes:
+      label: Input contract and artifacts
+      description: Include alpha-stack shape, ink count, and relevant metadata or animation manifest. Attach only files you may redistribute.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: I removed secrets, private URLs, and non-redistributable source images.
+          required: true
