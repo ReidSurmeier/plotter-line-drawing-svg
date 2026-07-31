@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
-from pathlib import Path
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -58,6 +59,24 @@ def test_user_can_generate_a_layered_svg_and_mp4(tmp_path: Path) -> None:
     master_svg = svg_dir / "master_coverage_svg.svg"
     assert master_svg.exists()
     assert 'data-mark-family="coverage_line_fill"' in master_svg.read_text(encoding="utf-8")
+    coverage_manifest_path = svg_dir / "coverage_svg_metadata.json"
+    coverage_manifest_text = coverage_manifest_path.read_text(encoding="utf-8")
+    coverage_manifest = json.loads(coverage_manifest_text)
+    assert str(tmp_path) not in coverage_manifest_text
+    assert coverage_manifest["source"] == "jax-alpha"
+    assert coverage_manifest["source_files"] == {
+        "alpha_stack_float32.npz": hashlib.sha256(
+            (alpha_dir / "alpha_stack_float32.npz").read_bytes()
+        ).hexdigest(),
+        "metadata.json": hashlib.sha256(
+            (alpha_dir / "metadata.json").read_bytes()
+        ).hexdigest(),
+    }
+    assert coverage_manifest["artifacts"]["master_svg"] == "master_coverage_svg.svg"
+    assert coverage_manifest["artifacts"]["plate_svgs"] == [
+        "plate_svgs/01_rose.svg",
+        "plate_svgs/02_blue.svg",
+    ]
 
     subprocess.run(
         [
@@ -85,7 +104,15 @@ def test_user_can_generate_a_layered_svg_and_mp4(tmp_path: Path) -> None:
     )
 
     mp4 = animation_dir / "smoke.mp4"
-    manifest = json.loads((animation_dir / "animation_manifest.json").read_text(encoding="utf-8"))
+    manifest_path = animation_dir / "animation_manifest.json"
+    manifest_text = manifest_path.read_text(encoding="utf-8")
+    manifest = json.loads(manifest_text)
     assert mp4.stat().st_size > 0
+    assert str(tmp_path) not in manifest_text
+    assert manifest["source_svg"] == "master_coverage_svg.svg"
+    assert manifest["source_svg_sha256"] == hashlib.sha256(
+        master_svg.read_bytes()
+    ).hexdigest()
+    assert manifest["output_mp4"] == "smoke.mp4"
     assert manifest["frame_count"] == 4
     assert manifest["fps"] == 2

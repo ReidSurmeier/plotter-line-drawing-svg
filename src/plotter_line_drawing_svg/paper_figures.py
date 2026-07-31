@@ -15,8 +15,8 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image
 
+from plotter_line_drawing_svg.manifests import sha256_file
 from plotter_line_drawing_svg.markmaking import InkSet, load_alpha_stack, load_inkset
-
 
 METHOD_COLORS = {"regen": "#1870b8", "prune": "#c94232"}
 RUNG_ORDER = ["full", "25%", "6.25%", "1.5625%"]
@@ -105,22 +105,32 @@ def main() -> int:
         max_side=args.max_side,
     )
 
-    summary = {
+    summary = paper_figure_manifest(records)
+    (args.out / "paper_figure_manifest.json").write_text(
+        json.dumps(summary, indent=2),
+        encoding="utf-8",
+    )
+    print(json.dumps(summary, indent=2))
+    return 0
+
+
+def paper_figure_manifest(records: list[ProofRecord]) -> dict[str, Any]:
+    return {
         "records": [
             {
                 "method": record.method,
                 "rung": record.rung,
                 "total_paths": record.total_paths,
                 "budget_scale": record.budget_scale,
-                "proof_dir": str(record.proof_dir),
+                "proof": record.proof_dir.name,
+                "coverage_manifest_sha256": sha256_file(
+                    record.proof_dir / "coverage_svg_metadata.json"
+                ),
             }
             for record in records
         ],
         "figures": [f"F{i}_{name}.pdf" for i, name in enumerate(FIGURE_NAMES, start=1)],
     }
-    (args.out / "paper_figure_manifest.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    print(json.dumps(summary, indent=2))
-    return 0
 
 
 def collect_records(roots: dict[str, Path]) -> list[ProofRecord]:

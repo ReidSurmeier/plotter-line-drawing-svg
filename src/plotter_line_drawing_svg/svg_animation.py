@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from plotter_line_drawing_svg.manifests import sha256_file
+
 
 @dataclass(frozen=True)
 class SvgLayer:
@@ -73,8 +75,9 @@ def main() -> int:
     encode_mp4(frames_dir, output_mp4, fps=args.fps)
 
     manifest = {
-        "source_svg": str(args.svg),
-        "output_mp4": str(output_mp4),
+        "source_svg": args.svg.name,
+        "source_svg_sha256": sha256_file(args.svg),
+        "output_mp4": output_mp4.name,
         "fps": args.fps,
         "frame_count": frame_count,
         "width_px": args.width_px,

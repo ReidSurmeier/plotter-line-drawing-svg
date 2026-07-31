@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+import hashlib
+import json
+from pathlib import Path
+
 import numpy as np
 
 from plotter_line_drawing_svg.paper_figures import (
+    ProofRecord,
     infer_plate_alpha,
     lab_plot_points,
+    paper_figure_manifest,
     polygon_area_from_path,
     target_coverage_load,
     uv_prime_sample,
@@ -38,3 +44,32 @@ def test_lab_plot_points_reorders_lab_for_3d_axes():
     lab = np.asarray([[50.0, -10.0, 20.0]], dtype=np.float32)
     plotted = lab_plot_points(lab)
     assert np.allclose(plotted, [[-10.0, 20.0, 50.0]])
+
+
+def test_paper_figure_manifest_uses_portable_proof_fixity(
+    tmp_path: Path,
+) -> None:
+    proof_dir = tmp_path / "private-machine-layout" / "regen-full"
+    proof_dir.mkdir(parents=True)
+    coverage_manifest = proof_dir / "coverage_svg_metadata.json"
+    coverage_manifest.write_text('{"paths": {"paths_per_plate": [3, 4]}}', encoding="utf-8")
+    record = ProofRecord(
+        method="regen",
+        rung="full",
+        proof_dir=proof_dir,
+        rendered_path=proof_dir / "actual_svg_crop.png",
+        target_path=proof_dir / "target_upscaled.png",
+        metadata={"paths": {"paths_per_plate": [3, 4]}},
+        paths_per_plate=(3, 4),
+        total_paths=7,
+        budget_scale=1.0,
+    )
+
+    manifest = paper_figure_manifest([record])
+    manifest_text = json.dumps(manifest)
+
+    assert str(tmp_path) not in manifest_text
+    assert manifest["records"][0]["proof"] == "regen-full"
+    assert manifest["records"][0]["coverage_manifest_sha256"] == hashlib.sha256(
+        coverage_manifest.read_bytes()
+    ).hexdigest()

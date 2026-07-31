@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from plotter_line_drawing_svg.manifests import portable_artifact_path, sha256_file
 from plotter_line_drawing_svg.markmaking import (
     CoverageConfig,
     alpha_masks_to_budget_solved_paths,
@@ -96,9 +97,24 @@ def main() -> int:
         preview.save(args.out_dir / "actual_svg_preview.png")
     write_contact_sheet(args.out_dir, inkset)
 
+    portable_artifacts = {
+        "master_svg": portable_artifact_path(
+            Path(artifacts["master_svg"]),
+            output_root=args.out_dir,
+        ),
+        "plate_svgs": [
+            portable_artifact_path(Path(path), output_root=args.out_dir)
+            for path in artifacts["plate_svgs"]
+        ],
+        "artwork_rect_mm": artifacts["artwork_rect_mm"],
+    }
     metadata = {
         "method": "coverage_line_fill",
-        "source": str(args.jax_dir),
+        "source": args.jax_dir.resolve().name,
+        "source_files": {
+            name: sha256_file(args.jax_dir / name)
+            for name in ("alpha_stack_float32.npz", "metadata.json")
+        },
         "alpha_stack_shape": [int(v) for v in alpha_stack.shape],
         "settings": {
             "tile_px": tile_px,
@@ -110,7 +126,7 @@ def main() -> int:
             "path_retention": args.path_retention,
         },
         "paths": path_metrics,
-        "artifacts": artifacts,
+        "artifacts": portable_artifacts,
     }
     (args.out_dir / "coverage_svg_metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     (args.out_dir / "index.html").write_text(_index_html(metadata), encoding="utf-8")
