@@ -53,6 +53,16 @@ _Avoid_: stack order
 The original master-SVG order used to composite visible ink layers.
 _Avoid_: reveal order
 
+**Generated manifest**:
+A portable JSON record of source fixity, relative artifact names, settings, and
+result structure for one generated output directory.
+_Avoid_: machine log, absolute-path dump
+
+**Source fixity**:
+The SHA-256 evidence that identifies the exact Alpha Stack, metadata, or Master
+SVG used for a run.
+_Avoid_: source path
+
 ## Relationships
 
 - An **Alpha stack** contains exactly one **Alpha plate** per **Ink set** entry.
@@ -60,6 +70,8 @@ _Avoid_: reveal order
 - A **Master SVG** contains all plate groups in **Stack order**.
 - A **Mark build** uses **Reveal order** for timing and **Stack order** for compositing.
 - A **Budget solve** and a **Prune baseline** are alternative reductions of the same baseline field.
+- A **Generated manifest** records **Source fixity** without exposing the
+  caller's filesystem layout.
 
 ## Example dialogue
 
@@ -74,3 +86,5 @@ _Avoid_: reveal order
 - “Animation” previously referred to dashboards and monitor replays. In this repository the canonical output is a **Mark build**.
 - “Line” previously included scribble strokes. Here a line is a filled **Coverage mark** with no SVG stroke.
 - “Twelve colors” means a twelve-entry **Ink set**, not twelve guaranteed visible layers.
+- “Source” in a **Generated manifest** identifies portable input evidence, not
+  a private machine path.

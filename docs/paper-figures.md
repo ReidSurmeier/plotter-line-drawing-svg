@@ -35,3 +35,15 @@ python -m plotter_line_drawing_svg.paper_figures \
   --prune-root /srv/woodblock-share/plotter-separation/plotter-line-drawing-svg-prune-reduce75-v1 \
   --out /srv/woodblock-share/plotter-separation/plotter-line-drawing-svg-paper-figures-v1
 ```
+
+## Figure manifest
+
+The command writes `paper_figure_manifest.json` beside the PDFs. Each record
+contains the method, rung, path budget, portable proof name, and
+`coverage_manifest_sha256` fixity for the proof's
+`coverage_svg_metadata.json`.
+
+The manifest does not record caller-specific absolute paths. Copying the
+figure directory therefore does not disclose or invalidate the former proof
+root, while the SHA-256 still identifies the exact Coverage Mark evidence used
+for the figures.

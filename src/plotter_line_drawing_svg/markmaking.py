@@ -13,7 +13,6 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw, ImageFont
 
-
 PAGE_MM = (594.0, 841.0)
 MARGIN_MM = 42.0
 REFERENCE_MAX_SIDE = 192.0

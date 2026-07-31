@@ -205,6 +205,29 @@ ffprobe -v error \
 Expected properties are H.264 video, even pixel dimensions, and `yuv420p`, which
 keeps the MP4 compatible with browsers and common video players.
 
+### 5. Verify portable manifests
+
+Both commands write JSON intended to travel with their output directories. A
+Generated Manifest does not include caller-specific absolute paths.
+
+`coverage_svg_metadata.json` records the portable Alpha Stack directory name,
+the SHA-256 of both required inputs under `source_files`, and artifact paths
+relative to the coverage output directory. `animation_manifest.json` records
+the Master SVG filename and its SHA-256 under `source_svg_sha256`, plus the
+output MP4 filename.
+
+Check that a shareable output does not expose its former filesystem location:
+
+```bash
+jq '{source, source_files, artifacts}' \
+  outputs/example/coverage-svg/coverage_svg_metadata.json
+jq '{source_svg, source_svg_sha256, output_mp4}' \
+  outputs/example/animation/animation_manifest.json
+```
+
+The hashes identify exact inputs after an output directory moves. They do not
+establish source-image authorship or publication rights.
+
 ## Path B: start from a JPG or PNG
 
 This path adds the upstream JAX alpha-plate solver. The installation above puts

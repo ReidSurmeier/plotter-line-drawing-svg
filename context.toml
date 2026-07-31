@@ -1,0 +1,17 @@
+schema_version = 1
+project = "plotter-line-drawing-svg"
+classification = "maintained-reference-implementation"
+context_document = "CONTEXT.md"
+project_document = "PROJECT.md"
+decision_directory = "docs/adr"
+issue_tracker = "github"
+deployment_ownership = "none"
+canonical_remote = "origin"
+upstream_plate_solver = "ReidSurmeier/plotter-separation-rebuild"
+
+owned_stages = [
+    "coverage-mark-generation",
+    "layered-svg-export",
+    "mark-build-rendering",
+    "paper-figures",
+]

@@ -1,9 +1,13 @@
-This is the final(version)
-
 # Plotter Line Drawing SVG
+
+Status: maintained reference implementation.
 
 Turn solved color-separation plates into layered SVG fields of filled plotter
 marks, then reveal those marks as an artwork-only MP4.
+
+Deployment ownership: none. This repository provides local command-line tools
+and published media evidence; it does not own GitHub Pages, a Droplet service,
+or a Pugnet runtime.
 
 The repository owns the last two stages of this pipeline:
 
@@ -81,6 +85,7 @@ and troubleshooting.
 
 ## Documentation
 
+- [PROJECT.md](PROJECT.md) — project status and custody
 - [Complete animation workflow](docs/animation-workflow.md)
 - [Methodology](docs/methodology.md)
 - [Paper figures](docs/paper-figures.md)
