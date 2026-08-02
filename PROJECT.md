@@ -64,10 +64,20 @@ That establishes export lineage, not the exact generating Alpha Stack or
 source-image rights. [Issue 2](https://github.com/ReidSurmeier/plotter-line-drawing-svg/issues/2)
 owns the human provenance and publication-rights review.
 
+On 2026-08-02, the repository owner confirmed that they own or are authorized
+to publish the portrait, bathroom, and fashion imagery represented by the
+three-file `plotter-image-animations` snapshot. The six exports here depict the
+same portrait and bathroom subjects, so continued distribution of these six
+unchanged exports is authorized. This human authorization does not identify
+the exact generating Alpha Stacks or source files; issue 2 remains open for
+that provenance evidence.
+
 The clean home checkout also contains an ignored 234 MB
 `runs/tumblr-790aa7518ed1` reference run. It is local custody, not tracked
 source. [Issue 3](https://github.com/ReidSurmeier/plotter-line-drawing-svg/issues/3)
-requires an additive manifest and reviewed move map before changing it.
+is now backed by the additive fixity and move map in
+`docs/ignored-run-custody.md`. The run must move with the repository without
+being published or rewritten.
 
 ## Runtime and deployment ownership
 
@@ -95,8 +105,9 @@ not skip. Use a temporary output directory for any real visual canary.
 
 ## Next actions
 
-1. Complete the source-image rights review in issue 2.
-2. Inventory and map custody for the ignored run in issue 3.
+1. Continue exact source-image and Alpha Stack provenance recovery in issue 2;
+   publication authorization for the current unchanged exports is recorded.
+2. Preserve the issue 3 fixity record whenever the ignored run is relocated.
 3. Preserve the closed portable-manifest canary evidence in
    [issue 4](https://github.com/ReidSurmeier/plotter-line-drawing-svg/issues/4)
    when the manifest schema changes again.
