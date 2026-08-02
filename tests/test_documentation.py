@@ -71,6 +71,7 @@ def test_project_resume_packet_matches_the_repository_boundary() -> None:
         "CONTEXT.md",
         "context.toml",
         "docs/adr/0001-keep-generated-manifests-portable.md",
+        "docs/ignored-run-custody.md",
         "docs/agents/domain.md",
         "docs/agents/issue-tracker.md",
         "docs/agents/triage-labels.md",
@@ -128,6 +129,28 @@ def test_published_export_lineage_is_recorded_without_claiming_rights() -> None:
         in provenance
     )
     assert "does not establish publication rights" in provenance
+    assert "2026-08-02" in provenance
+    assert "authorized to publish the current portrait and bathroom exports" in provenance
+
+
+def test_ignored_run_custody_is_fixity_addressed_without_publishing_it() -> None:
+    custody = (ROOT / "docs" / "ignored-run-custody.md").read_text(
+        encoding="utf-8"
+    )
+
+    for fact in (
+        "290",
+        "244,531,468",
+        "5d8e06d5681289ee5ca362d34717598905edc1131d83a4705eaacdf3d308d21e",
+        "3f6cd69eec452e876b6f4cf2c324c733cdbe7269a7a41917c8d463fa614680e9",
+        "94e9c8338224b4c299007bb2bc0bdc468eb3ee6040744044478fb9ff799e6af3",
+        "5666eee5f8dcf5113ca52f577534ba6daf3971c8fbe71ef9b0bd329da5aeb603",
+        "publication rights remain unresolved",
+        "move with the repository",
+    ):
+        assert fact in custody
+
+    assert "/home/reidsurmeier" not in custody
 
 
 def test_paper_figure_manifest_contract_is_documented() -> None:

@@ -42,3 +42,12 @@ This establishes export custody and code lineage. It does not identify the
 exact generating Alpha Stacks or source images, and it does not establish
 publication rights. Those questions remain assigned to the repository's
 human provenance review.
+
+On 2026-08-02, the repository owner confirmed that they own or are authorized
+to publish the portrait, bathroom, and fashion imagery represented by the
+related three-export snapshot. That authorization covers continued
+distribution of the current portrait and bathroom exports here. It does not
+recover their exact source files or generating Alpha Stacks, so issue 2 remains
+open for provenance rather than publication authorization.
+
+The owner is authorized to publish the current portrait and bathroom exports.
